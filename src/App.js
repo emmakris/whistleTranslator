@@ -14,7 +14,7 @@ function App() {
   const [isLoading,setIsLoading] = useState(true)
   const classifierRef = useRef(null);
 
-  const classifySound = async (p) => {
+  const classifySound = async () => {
     const options = {
       probabilityThreshold: 0.65,
       // audioContext: p.getAudioContext(),
@@ -25,28 +25,31 @@ function App() {
       onModelReady
     );
 
-    function onModelReady() {
-      console.log("Model is ready");
-      setIsLoading(false)
-      classifierRef.current.classify(onResult);
-    }
-
-    function onResult(error, results) {
-      if (error) {
-        console.error(error);
-        return;
-      }
-      if (results[0].confidence >= 0.95 && results[0].label !=='Background Noise' ) {
-        const findTranslation = sounds.find((f)=>f.label === results[0].label)
-        if (findTranslation)
-        {setLabel(findTranslation.translation);
-        classifierRef.current.classify(onResult);}
-      }
-    }
+   
   };
 
+  function onModelReady() {
+    console.log("Model is ready");
+    setIsLoading(false)
+    classifierRef.current.classify(onResult);
+  }
+
+  function onResult(error, results) {
+    if (error) {
+      console.error(error);
+      return;
+    }
+    if (results[0].confidence >= 0.95 && results[0].label !=='Background Noise' ) {
+      const findTranslation = sounds.find((f)=>f.label === results[0].label)
+      if (findTranslation)
+      {
+        setLabel(findTranslation.translation);
+    }
+    }
+  }
+
   useEffect(() => {
-    classifySound();
+    classifySound().then(()=>{}).catch((e)=>console.log(e))
   }, []);
 
   
