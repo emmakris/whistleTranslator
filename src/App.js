@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, {useState, useEffect, useRef, useCallback} from "react";
 import * as ml5 from "ml5";
+import { ReactMic } from 'react-mic';
 
 import "./App.css";
 const sounds = [
@@ -13,7 +14,8 @@ function App() {
   const [label, setLabel] = useState("");
   const [isLoading,setIsLoading] = useState(true)
   const classifierRef = useRef(null);
-
+  const [isListening, setIsListening] = useState(false);
+  const audioStreamRef = useRef(null);
   const classifySound = async () => {
     const options = {
       probabilityThreshold: 0.65,
@@ -25,32 +27,57 @@ function App() {
       onModelReady
     );
 
-   
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(stream => {
+        audioStreamRef.current = stream;
+        stopListening()
+      })
+      .catch(err => {
+        console.error("Error getting audio stream:", err);
+      });
   };
 
   function onModelReady() {
     console.log("Model is ready");
     setIsLoading(false)
-    classifierRef.current.classify(onResult);
   }
 
-  function onResult(error, results) {
-    if (error) {
-      console.error(error);
-      return;
-    }
-    if (results[0].confidence >= 0.95 && results[0].label !=='Background Noise' ) {
-      const findTranslation = sounds.find((f)=>f.label === results[0].label)
-      if (findTranslation)
-      {
-        setLabel(findTranslation.translation);
-    }
-    }
-  }
 
   useEffect(() => {
     classifySound().then(()=>{}).catch((e)=>console.log(e))
   }, []);
+
+
+  const startListening = useCallback(() => {
+    setLabel('')
+    if (classifierRef.current && audioStreamRef.current) {
+      classifierRef.current.classify(audioStreamRef.current,(err, results) => {
+        if (err) {
+          console.error(err);
+          return;
+        }
+        if (results[0].confidence >= 0.95 && results[0].label !=='Background Noise' ) {
+          const findTranslation = sounds.find((f)=>f.label === results[0].label)
+          if (findTranslation)
+          {
+            setLabel(findTranslation.translation);
+            stopListening()
+          }
+        }
+      });
+
+      setIsListening(true);
+    }
+  },[classifierRef,audioStreamRef])
+
+  const stopListening = () => {
+    if (audioStreamRef.current) {
+      const tracks = audioStreamRef.current.getTracks();
+      tracks.forEach(track => track.stop());
+      classifierRef?.current?.model?.model?.stopListening()
+      setIsListening(false);
+    }
+  };
 
   
   return (
@@ -63,8 +90,20 @@ function App() {
         :
         <>
         <h1>Μεταφραστής Λέρικων σφυριγμάτων</h1>
-        <h6>Μετάφραση:</h6>
-        <p>{label}</p>
+         <button style={{
+           width:200,
+           height:200,
+           background:'#d84343',
+           color:'white',
+           border:'4px solid white',
+           borderRadius:100,
+           cursor:'pointer',
+           fontSize:20
+         }}  onClick={isListening ? stopListening : startListening}>        {isListening ? "Παύση" : "Εκκίνηση"}
+         </button>
+        <h6 style={{marginBottom:-10}}>Μετάφραση:</h6>
+        <p style={{height:30}}>{label}</p>
+          <p style={{fontSize:12}}>v 0.2</p>
         </>
       }
         
