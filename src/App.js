@@ -1,6 +1,5 @@
 import React, {useState, useEffect, useRef, useCallback} from "react";
 import * as ml5 from "ml5";
-import { ReactMic } from 'react-mic';
 
 import "./App.css";
 const sounds = [
