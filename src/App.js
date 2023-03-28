@@ -26,12 +26,13 @@ function App() {
       onModelReady
     );
 
-    navigator.mediaDevices.getUserMedia({ audio: true })
+   await navigator.mediaDevices.getUserMedia({ audio: true })
       .then(stream => {
         audioStreamRef.current = stream;
         stopListening()
       })
       .catch(err => {
+        alert(err)
         console.error("Error getting audio stream:", err);
       });
   };
